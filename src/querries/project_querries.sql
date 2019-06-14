@@ -1,0 +1,103 @@
+/*
+ connecting tables
+ */
+
+SELECT NAME
+FROM LIQUOR
+WHERE PRICE = 15
+UNION
+SELECT name
+FROM LIQUOR_TYPE_DICTIONARY
+WHERE ALC < 40
+ORDER BY 2 DESC;
+
+SELECT NAME
+FROM COCKTAIL
+WHERE PRICE BETWEEN 15 AND 20
+UNION
+SELECT NAME
+FROM LIQUOR
+WHERE DATE_OF_EXP < '31.12.2019';
+
+SELECT C.NAME AS coctail_name, L.NAME AS liquor_name
+FROM LIQUOR L,
+     LIQUOR_FOR_COCKTAIL LFC,
+     COCKTAIL C
+WHERE L.id_liquor = LFC.id_liquor
+  AND C.ID_COCKTAIL = LFC.ID_COCKTAIL;
+
+/*
+ aggregate functions
+ */
+
+SELECT max(l.PRICE) AS max_price, ltd.NAME AS liquor_type
+FROM LIQUOR_TYPE_DICTIONARY ltd,
+     LIQUOR l
+WHERE ltd.ID_LIQUOR_TYPE_DICTIONARY = l.ID_LIQUOR_TYPE_DICTIONARY
+GROUP BY ltd.name;
+
+
+SELECT ltd.NAME AS liquor_type, count(l.NAME)
+FROM LIQUOR_TYPE_DICTIONARY ltd,
+     LIQUOR l
+WHERE ltd.ID_LIQUOR_TYPE_DICTIONARY = l.ID_LIQUOR_TYPE_DICTIONARY
+GROUP BY ltd.name;
+
+/*
+ simple subqueries
+ */
+
+SELECT name, price
+FROM LIQUOR
+WHERE price > (SELECT avg(PRICE) FROM LIQUOR);
+
+
+SELECT c.NAME AS coctail_name, l.NAME AS liquor_name
+FROM LIQUOR l,
+     LIQUOR_FOR_COCKTAIL lfc,
+     COCKTAIL c
+WHERE l.ID_LIQUOR = lfc.ID_LIQUOR
+  AND c.ID_COCKTAIL = lfc.ID_COCKTAIL
+  AND lfc.ID_COCKTAIL = (SELECT ID_COCKTAIL FROM COCKTAIL WHERE name = 'long island ice tea');
+
+
+/*
+ correlated subqueries
+ */
+
+SELECT CO.NAME AS cocktail_name, LO.NAME AS liquor_name, LO.DATE_OF_EXP
+FROM LIQUOR LO,
+     COCKTAIL CO,
+     LIQUOR_FOR_COCKTAIL LFCO
+WHERE LO.ID_LIQUOR = LFCO.ID_LIQUOR
+  AND LFCO.ID_COCKTAIL = CO.ID_COCKTAIL
+  AND LO.DATE_OF_EXP = (SELECT min(LI.DATE_OF_EXP)
+                        FROM LIQUOR LI,
+                             LIQUOR_FOR_COCKTAIL LFCI,
+                             COCKTAIL CI
+                        WHERE LI.ID_LIQUOR = LFCI.ID_LIQUOR
+                          AND LFCI.ID_COCKTAIL = CI.ID_COCKTAIL
+                          AND CI.ID_COCKTAIL = CO.ID_COCKTAIL);
+
+SELECT CO.NAME AS Coctail_NAME, LO.NAME AS liquor_name, lo.PRICE
+FROM LIQUOR LO,
+     LIQUOR_FOR_COCKTAIL LFCO,
+     COCKTAIL CO
+WHERE LO.id_liquor = LFCO.id_liquor
+  AND CO.ID_COCKTAIL = LFCO.ID_COCKTAIL
+  AND LO.PRICE = (SELECT MAX(LI.PRICE)
+                  FROM LIQUOR LI,
+                       LIQUOR_FOR_COCKTAIL LFCI,
+                       COCKTAIL CI
+                  WHERE LI.ID_LIQUOR = LFCI.ID_LIQUOR
+                    AND LFCI.ID_COCKTAIL = CI.ID_COCKTAIL
+                    AND CO.ID_COCKTAIL = CI.ID_COCKTAIL
+);
+
+SELECT LTD.NAME AS Liquor_Type, outerL.NAME AS Liquor_Name, outerL.DATE_OF_EXP
+FROM LIQUOR outerL,
+     LIQUOR_TYPE_DICTIONARY LTD
+WHERE outerL.ID_LIQUOR_TYPE_DICTIONARY = LTD.ID_LIQUOR_TYPE_DICTIONARY
+  AND outerL.DATE_OF_EXP = (SELECT max(innerL.DATE_OF_EXP)
+                            FROM LIQUOR innerL
+                            WHERE innerL.ID_LIQUOR_TYPE_DICTIONARY = LTD.ID_LIQUOR_TYPE_DICTIONARY);
